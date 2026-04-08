@@ -3,9 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ReactNode } from "react";
-import { motion } from "motion/react";
-import { ArrowRight, Menu, Search, MapPin, Home, Phone, Instagram, Facebook, Twitter, Bed, Bath, Users, Quote } from "lucide-react";
+import { ReactNode, useState, useEffect, FormEvent } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { ArrowRight, Menu, Search, MapPin, Home, Phone, Instagram, Facebook, Twitter, Bed, Bath, Users, Quote, X, Loader2, CheckCircle2 } from "lucide-react";
+
+interface Property {
+  id: string;
+  image: string;
+  title: string;
+  location: string;
+  price: string;
+  beds: number;
+  baths: number;
+  description: string;
+}
 
 const NavItem = ({ children }: { children: ReactNode }) => (
   <div className="px-6 py-4 text-[10px] uppercase tracking-[0.2em] border-r border-ink/10 hover:bg-ink hover:text-paper transition-colors duration-300 cursor-pointer flex items-center justify-center">
@@ -13,56 +24,82 @@ const NavItem = ({ children }: { children: ReactNode }) => (
   </div>
 );
 
-const SearchBar = () => (
-  <motion.div 
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: 0.5, duration: 0.8 }}
-    className="bg-white p-6 md:p-8 shadow-2xl border border-ink/5 w-full max-w-5xl mx-auto -mt-12 relative z-20"
-  >
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-      <div className="space-y-2">
-        <label className="text-[10px] uppercase tracking-widest font-semibold text-ink/40">Location</label>
-        <div className="relative">
-          <MapPin className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-accent" />
-          <input type="text" placeholder="City or Zip Code" className="w-full pl-6 py-2 border-b border-ink/10 focus:border-accent outline-none transition-colors text-sm" />
-        </div>
-      </div>
-      <div className="space-y-2">
-        <label className="text-[10px] uppercase tracking-widest font-semibold text-ink/40">Price Range</label>
-        <div className="flex items-center gap-2">
-          <input type="text" placeholder="Min" className="w-full py-2 border-b border-ink/10 focus:border-accent outline-none transition-colors text-sm" />
-          <span className="text-ink/20">—</span>
-          <input type="text" placeholder="Max" className="w-full py-2 border-b border-ink/10 focus:border-accent outline-none transition-colors text-sm" />
-        </div>
-      </div>
-      <div className="space-y-2">
-        <label className="text-[10px] uppercase tracking-widest font-semibold text-ink/40">Bedrooms</label>
-        <select className="w-full py-2 border-b border-ink/10 focus:border-accent outline-none transition-colors text-sm bg-transparent">
-          <option>Any</option>
-          <option>1+ Beds</option>
-          <option>2+ Beds</option>
-          <option>3+ Beds</option>
-          <option>4+ Beds</option>
-        </select>
-      </div>
-      <button className="w-full py-3 bg-ink text-paper text-[10px] uppercase tracking-[0.2em] hover:bg-accent transition-colors duration-500 flex items-center justify-center group">
-        Search Properties
-        <Search className="ml-2 w-4 h-4 transition-transform group-hover:scale-110" />
-      </button>
-    </div>
-  </motion.div>
-);
+const SearchBar = ({ onSearch }: { onSearch: (params: any) => void }) => {
+  const [params, setParams] = useState({
+    location: "",
+    minPrice: "",
+    maxPrice: "",
+    beds: "Any"
+  });
 
-const PropertyCard = ({ image, title, location, price, beds, baths, description }: { 
-  image: string, 
-  title: string, 
-  location: string, 
-  price: string,
-  beds: number,
-  baths: number,
-  description: string
-}) => (
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.5, duration: 0.8 }}
+      className="bg-white p-6 md:p-8 shadow-2xl border border-ink/5 w-full max-w-5xl mx-auto -mt-12 relative z-20"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+        <div className="space-y-2">
+          <label className="text-[10px] uppercase tracking-widest font-semibold text-ink/40">Location</label>
+          <div className="relative">
+            <MapPin className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-accent" />
+            <input 
+              type="text" 
+              placeholder="City or Zip Code" 
+              className="w-full pl-6 py-2 border-b border-ink/10 focus:border-accent outline-none transition-colors text-sm"
+              value={params.location}
+              onChange={(e) => setParams({ ...params, location: e.target.value })}
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] uppercase tracking-widest font-semibold text-ink/40">Price Range</label>
+          <div className="flex items-center gap-2">
+            <input 
+              type="text" 
+              placeholder="Min" 
+              className="w-full py-2 border-b border-ink/10 focus:border-accent outline-none transition-colors text-sm"
+              value={params.minPrice}
+              onChange={(e) => setParams({ ...params, minPrice: e.target.value })}
+            />
+            <span className="text-ink/20">—</span>
+            <input 
+              type="text" 
+              placeholder="Max" 
+              className="w-full py-2 border-b border-ink/10 focus:border-accent outline-none transition-colors text-sm"
+              value={params.maxPrice}
+              onChange={(e) => setParams({ ...params, maxPrice: e.target.value })}
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] uppercase tracking-widest font-semibold text-ink/40">Bedrooms</label>
+          <select 
+            className="w-full py-2 border-b border-ink/10 focus:border-accent outline-none transition-colors text-sm bg-transparent"
+            value={params.beds}
+            onChange={(e) => setParams({ ...params, beds: e.target.value })}
+          >
+            <option>Any</option>
+            <option>1+ Beds</option>
+            <option>2+ Beds</option>
+            <option>3+ Beds</option>
+            <option>4+ Beds</option>
+          </select>
+        </div>
+        <button 
+          onClick={() => onSearch(params)}
+          className="w-full py-3 bg-ink text-paper text-[10px] uppercase tracking-[0.2em] hover:bg-accent transition-colors duration-500 flex items-center justify-center group"
+        >
+          Search Properties
+          <Search className="ml-2 w-4 h-4 transition-transform group-hover:scale-110" />
+        </button>
+      </div>
+    </motion.div>
+  );
+};
+
+const PropertyCard = ({ property }: { property: Property }) => (
   <motion.div 
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -71,8 +108,8 @@ const PropertyCard = ({ image, title, location, price, beds, baths, description 
   >
     <div className="relative overflow-hidden aspect-[4/5] mb-6">
       <img 
-        src={image} 
-        alt={title} 
+        src={property.image} 
+        alt={property.title} 
         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         referrerPolicy="no-referrer"
       />
@@ -82,27 +119,27 @@ const PropertyCard = ({ image, title, location, price, beds, baths, description 
       </div>
     </div>
     <div className="flex-grow">
-      <h3 className="font-serif text-2xl font-light mb-1">{title}</h3>
+      <h3 className="font-serif text-2xl font-light mb-1">{property.title}</h3>
       <div className="flex items-center text-[10px] uppercase tracking-widest text-ink/60 mb-4">
         <MapPin className="w-3 h-3 mr-1" />
-        {location}
+        {property.location}
       </div>
       <p className="text-ink/60 text-sm leading-relaxed mb-6 line-clamp-2">
-        {description}
+        {property.description}
       </p>
       <div className="flex items-center gap-6 mb-6 border-y border-ink/5 py-3">
         <div className="flex items-center gap-2">
           <Bed className="w-4 h-4 text-accent" />
-          <span className="text-xs font-medium">{beds} Beds</span>
+          <span className="text-xs font-medium">{property.beds} Beds</span>
         </div>
         <div className="flex items-center gap-2">
           <Bath className="w-4 h-4 text-accent" />
-          <span className="text-xs font-medium">{baths} Baths</span>
+          <span className="text-xs font-medium">{property.baths} Baths</span>
         </div>
       </div>
     </div>
     <div className="flex items-center justify-between">
-      <p className="font-medium text-lg text-accent">{price}</p>
+      <p className="font-medium text-lg text-accent">{property.price}</p>
       <button className="text-[10px] uppercase tracking-[0.2em] font-semibold flex items-center group hover:text-accent transition-colors">
         View Details
         <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
@@ -112,6 +149,52 @@ const PropertyCard = ({ image, title, location, price, beds, baths, description 
 );
 
 export default function App() {
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [contactStatus, setContactStatus] = useState<{ loading: boolean; success: boolean; message: string }>({
+    loading: false,
+    success: false,
+    message: ""
+  });
+
+  const fetchProperties = async (params: any = {}) => {
+    setLoading(true);
+    try {
+      const query = new URLSearchParams(params).toString();
+      const response = await fetch(`/api/properties?${query}`);
+      const data = await response.json();
+      setProperties(data);
+    } catch (error) {
+      console.error("Failed to fetch properties:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProperties();
+  }, []);
+
+  const handleContactSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const data = Object.fromEntries(formData.entries());
+
+    setContactStatus({ loading: true, success: false, message: "" });
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      const result = await response.json();
+      setContactStatus({ loading: false, success: true, message: result.message });
+      (e.target as HTMLFormElement).reset();
+    } catch (error) {
+      setContactStatus({ loading: false, success: false, message: "Something went wrong. Please try again." });
+    }
+  };
+
   return (
     <div className="min-h-screen selection:bg-accent selection:text-paper">
       {/* Navigation Grid */}
@@ -186,7 +269,7 @@ export default function App() {
           </div>
         </section>
 
-        <SearchBar />
+        <SearchBar onSearch={fetchProperties} />
 
         {/* Featured Properties */}
         <section className="px-8 py-24 border-t border-ink/10">
@@ -210,44 +293,31 @@ export default function App() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <PropertyCard 
-              image="https://picsum.photos/seed/villa-1/600/800"
-              title="Villa Azure"
-              location="Côte d'Azur, France"
-              price="$12,500,000"
-              beds={6}
-              baths={7}
-              description="A stunning cliffside villa offering panoramic Mediterranean views and private beach access."
-            />
-            <PropertyCard 
-              image="https://picsum.photos/seed/penthouse/600/800"
-              title="The Obsidian Penthouse"
-              location="Manhattan, New York"
-              price="$24,000,000"
-              beds={4}
-              baths={5}
-              description="Ultra-modern living in the heart of the city with 360-degree skyline views and a private rooftop garden."
-            />
-            <PropertyCard 
-              image="https://picsum.photos/seed/modern-mansion/600/800"
-              title="Echo Valley Residence"
-              location="Aspen, Colorado"
-              price="$8,900,000"
-              beds={5}
-              baths={6}
-              description="A contemporary mountain retreat blending organic materials with state-of-the-art smart home technology."
-            />
-            <PropertyCard 
-              image="https://picsum.photos/seed/london-townhouse/600/800"
-              title="Mayfair Heritage"
-              location="London, UK"
-              price="£18,500,000"
-              beds={7}
-              baths={8}
-              description="A meticulously restored Victorian townhouse featuring original period details and a private wine cellar."
-            />
-          </div>
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-24 gap-4">
+              <Loader2 className="w-8 h-8 animate-spin text-accent" />
+              <p className="text-[10px] uppercase tracking-widest font-medium text-ink/40">Curating results...</p>
+            </div>
+          ) : properties.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {properties.map((property) => (
+                <div key={property.id}>
+                  <PropertyCard property={property} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-24 border border-dashed border-ink/10">
+              <p className="font-serif text-2xl font-light mb-2">No properties found</p>
+              <p className="text-ink/40 text-sm">Try adjusting your search criteria.</p>
+              <button 
+                onClick={() => fetchProperties()}
+                className="mt-6 text-[10px] uppercase tracking-widest font-semibold text-accent hover:underline"
+              >
+                View all properties
+              </button>
+            </div>
+          )}
         </section>
 
         {/* About Us Section */}
@@ -364,34 +434,66 @@ export default function App() {
               </div>
             </div>
           </div>
-          <div className="bg-white p-12 shadow-2xl shadow-ink/5 border border-ink/5">
-            <form className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest font-semibold">Full Name</label>
-                  <input type="text" className="w-full border-b border-ink/20 py-2 focus:border-accent outline-none transition-colors" placeholder="John Doe" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest font-semibold">Email Address</label>
-                  <input type="email" className="w-full border-b border-ink/20 py-2 focus:border-accent outline-none transition-colors" placeholder="john@example.com" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest font-semibold">Interest</label>
-                <select className="w-full border-b border-ink/20 py-2 focus:border-accent outline-none transition-colors bg-transparent">
-                  <option>Buying a Property</option>
-                  <option>Selling a Property</option>
-                  <option>Investment Opportunities</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest font-semibold">Message</label>
-                <textarea className="w-full border-b border-ink/20 py-2 focus:border-accent outline-none transition-colors resize-none" rows={4} placeholder="Tell us about your requirements..." />
-              </div>
-              <button className="w-full py-4 bg-ink text-paper text-[10px] uppercase tracking-[0.2em] hover:bg-accent transition-colors duration-500">
-                Send Inquiry
-              </button>
-            </form>
+          <div className="bg-white p-12 shadow-2xl shadow-ink/5 border border-ink/5 relative">
+            <AnimatePresence mode="wait">
+              {contactStatus.success ? (
+                <motion.div 
+                  key="success"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="text-center py-12"
+                >
+                  <CheckCircle2 className="w-16 h-16 text-accent mx-auto mb-6" />
+                  <h3 className="font-serif text-3xl font-light mb-4">Inquiry Received</h3>
+                  <p className="text-ink/60 mb-8">{contactStatus.message}</p>
+                  <button 
+                    onClick={() => setContactStatus({ ...contactStatus, success: false })}
+                    className="text-[10px] uppercase tracking-widest font-semibold text-accent hover:underline"
+                  >
+                    Send another message
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.form 
+                  key="form"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onSubmit={handleContactSubmit} 
+                  className="space-y-6"
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase tracking-widest font-semibold">Full Name</label>
+                      <input name="name" required type="text" className="w-full border-b border-ink/20 py-2 focus:border-accent outline-none transition-colors" placeholder="John Doe" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase tracking-widest font-semibold">Email Address</label>
+                      <input name="email" required type="email" className="w-full border-b border-ink/20 py-2 focus:border-accent outline-none transition-colors" placeholder="john@example.com" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest font-semibold">Interest</label>
+                    <select name="interest" className="w-full border-b border-ink/20 py-2 focus:border-accent outline-none transition-colors bg-transparent">
+                      <option>Buying a Property</option>
+                      <option>Selling a Property</option>
+                      <option>Investment Opportunities</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest font-semibold">Message</label>
+                    <textarea name="message" required className="w-full border-b border-ink/20 py-2 focus:border-accent outline-none transition-colors resize-none" rows={4} placeholder="Tell us about your requirements..." />
+                  </div>
+                  <button 
+                    disabled={contactStatus.loading}
+                    className="w-full py-4 bg-ink text-paper text-[10px] uppercase tracking-[0.2em] hover:bg-accent transition-colors duration-500 flex items-center justify-center disabled:opacity-50"
+                  >
+                    {contactStatus.loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send Inquiry"}
+                  </button>
+                </motion.form>
+              )}
+            </AnimatePresence>
           </div>
         </section>
       </main>
